@@ -1,10 +1,11 @@
 Package: DiscNoise
-Title: What the Package Does (one line, title case)
-Version: 0.0.0.9000
-Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+Title: Framework for Analysis of Impact of Discretization Noise on the Performance and Interpretation of Machine Learning Classifiers
+Version: 0.1
+Authors@R: person("Gopi Krishnan", "Rajbahadur", email = "krishnan@cs.queensu.ca", role = c("aut", "cre"))
+Description: An implementation of the framework described in our paper titled "Impact of Discretization Noise on Machine Learning Classifiers when Studying Software Engineering Datasets". This package provides an automated way of applying the framework for any given dataset. Currently the package supports the impact analysis on Random Forest, Logistic Regression, Classification Trees and K-NN. Both the impact on performance and feature importance can be estimated for any given dataset. Please refer our paper for more detailed information.
 Depends: R (>= 3.4.4)
-License: What license is it under?
+Imports:randomForest.ddR, randomForest, pROC, ROCR, doMC, rms, caret, mccr, foreign, roxygen2
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.0.9000
