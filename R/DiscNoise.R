@@ -8,10 +8,14 @@ library(rms)
 library(caret)
 library(mccr)
 library(foreign)
-
+library(roxygen2)
 
 
 #Extract importance from the models
+#' Function for generating the importance values of the classifiers 
+#'@param model a r model. A trained classifier model whose importance is to be evaluated
+#'@param var a character vector, containing the columnames of the test data set
+#'@returns a numeric vector, with all the importance values for the features involved
 
 get_importance_generic<-function(model,var){
   if(classifier=='rf'){
@@ -27,6 +31,14 @@ get_importance_generic<-function(model,var){
 }
 
 ### Generating OOSB samples 
+#' The function generates the out-of-sample bootstrap train and test data
+#' A function to compute Area Under the ROC-CURVE 
+#' @param data must be a object of type data.frame, with the continuous dependent variable
+#' @param boot_size a numeric value. It specifies the number of bootstrap iterations to be used in the framework.
+#' @param seed a logical value indicating if the experiment needs to repetable or random. Defaults to TRUE
+#' @return a list containing train and test data for all specified boot_Size iterations
+#' 
+
 create_oosb_sample<-function(data,boot_size,seed=TRUE){
   
   train_indices <- list()
@@ -54,7 +66,13 @@ if(is.numeric(seed)){
   
 }
 
-#Extract Auc
+#' Extract AUC Function
+#' A function to compute Area Under the ROC-CURVE 
+#' @param actuals A vector containing the true class of the test data points
+#' @param predicted A vector of predicted values 
+#' @return a numeric copmuted MCC value
+#' 
+
 get_auc<-function(actuals,predicted){
   predictions<-prediction(predicted,actuals)
   
@@ -63,6 +81,12 @@ get_auc<-function(actuals,predicted){
   result_auc<-min(round(auc,digits=2))
   return(result_auc)
 }
+
+#' A function to compute Mathew's Correlation Coefficient
+#' @param act A vector containing the true class of the test data points
+#' @param pred A vector of predicted values 
+#' @param classes The classes that are existent in the dependent variable 
+#' @return a numeric copmuted MCC value
 
 #Function to get Mathew's Correlation Coefficient 
 get_mcc<-function(act,pred,classes)
@@ -80,7 +104,12 @@ get_mcc<-function(act,pred,classes)
   return(mcc)
 }
 
-
+#'The function that is responsible for computing the performance evaluation metrics
+#'
+#'@param actuals A vector containing the true class of the test data points
+#'@param test a dataframe. Test dataset 
+#'@param model a r model. A trained classifier model whose performance is to be evaluated
+#'@return a vector with al the performance measures computed 
 
 #This function computes all the performance metrics at once 
 get_performance_metrics<-function(actuals,test,model)
@@ -112,6 +141,15 @@ get_performance_metrics<-function(actuals,test,model)
   }
 }
 
+
+#' This is an internal function that builds the classifier model 
+#' @param classifier a string, takes the name of the classifier.Currently supported classifiers are 
+#' 'rf' - Random forest
+#' 'lrm' - Logistic regression
+#' 'CART' - Classification tree
+#' 'knn' - K-Nearest Neighbors 
+#' @param train a dataframe. Contains the train dataset
+#' @param ... optional additional arguements for the classifer
 
 build_model<-function(classifier,train,...){
   
@@ -150,6 +188,11 @@ build_model<-function(classifier,train,...){
   }
 }
 
+#' Abstracting the predict function 
+#' @param model r model object, passed to generate actual responses or probability scores 
+#' @param test the test dataset for which prob score or responses are to be genereated 
+#' @param type a string, that takes either c('class','prob','response') for apporiate response
+#' @return probability score for the outcome classes or actual class that the supplied model predicts
 
 predict_generic<-function(model,test,type)
 {
@@ -173,6 +216,23 @@ remove_noise<-function(train,dep_var,cutpoint,target){
   return(train[(train[,dep_var]<cutpoint-target)|(train[,dep_var]>cutpoint+target),])
 }
 
+#' RWKH framework
+#' This framework does the heavy lifting of computing the performance and featue importance using out-o-sample boostrap validation for a given data configuration
+#' 
+#' 
+#' @param classifier a string, takes the name of the classifier.Currently supported classifiers are 
+#' 'rf' - Random forest
+#' 'lrm' - Logistic regression
+#' 'CART' - Classification tree
+#' 'knn' - K-Nearest Neighbors 
+#' @param data must be a object of type data.frame, with the continuous dependent variable
+#' @param parallel a logical value indicating if the function must be executed in parallel --Recommended.
+#' @param n_cores a numeric value specifying the number of cores to be used for parallel execution. Defaults to 1.
+#' @param boot_size a numeric value. It specifies the number of bootstrap iterations to be used in the framework. Defaults to 100
+#' @param dep_var a string giving the column name of continuous dependent variable supplied in the data parameter. This is the variable which creates the discretization noise.
+#' @param target a numeric value indicating the amount of discretization noise is to be included relative to cutpoint' 
+#' @return a list, that contains two lists containing performance impacts and importance values for each bootstrap iteration for the classifier
+#' 
 RWKH_framework<-function(classifier,data,parallel,n_cores,boot_size,dep_var,cutpoint,target,...)
 {
   indices<-create_oosb_sample(data,boot_size)
@@ -234,7 +294,81 @@ RWKH_framework<-function(classifier,data,parallel,n_cores,boot_size,dep_var,cutp
   }
 }
 
-#Analyzing discretization noise impact 
+
+#'Importance impact Computer
+#'This function takes the importance values generated by the framework for data with various amounts of discretization noise. It does so by reporting the significance of the generated rank lists for classifiers constructed on data with and without the discretization noise
+#'Furthermore, They also report the liklihood of rank shifts that occur on the top three ranks. Shifts are the possibility of the importance rank for the given rank shifting due to discretization noise
+#'
+#'@param importance_results a list of lists, which is result from the framework
+#'
+
+
+importance_impact_estimation<-function(importance_results){
+  
+ranks<-do.call(rbind,lapply(importance_results,function(x) sk_esd(x)$groups))
+ranks<-ranks[,match(colnames(importance_results[[1]]),colnames(ranks))]
+result<-ranks[,names(sort(apply(ranks,2,median)))]
+
+
+dx<-abs(result[1,]-ranks[nrow(result),])
+null_distribution<-rep(0,length(dx))
+wilcox_result<-wilcox.test(null_distribution,dx,paired=TRUE)$p.value
+co<-cohen.d(rep(0,length(dx)),dx)
+
+prob_frame<-matrix(nrow=0,ncol=ncol(result))
+for(i in 1:100){
+  #bootstrapping the scott-knott ranks
+  b_samp<-apply(result,2,function(x) sample(x,length(x),replace=TRUE))
+
+  prob_frame<- rbind(prob_frame,sk_esd(b_samp)$groups)
+  
+  
+}
+colnames(prob_frame)<-names(result)
+
+#Calculating the actual likihood
+
+liklihood_shifts<-NULL
+
+
+  temp<-prob_frame[,1:3]
+  for(i in 1:3)
+  {
+    medians<-apply(temp,2,median)
+    
+    liklihood_shifts<- (c(liklihood_shifts,length(temp[,i][temp[,i]!=medians[i]])/length(temp[,i])) )
+    shift_ranges<-c(shift_ranges,length(unique(temp[,i])))
+    
+  }
+  names(liklihood_shifts)<-c('rank1','rank2','rank3')
+
+print(paste('significance:',wilcox_result,'Effect size:',co$magnitude,co$estimate,'Rank 1 Shift:',liklihood_shifts[1],'Rank 2 Shift:',liklihood_shifts[2],'Rank 3 Shift:',liklihood_shifts[3]))
+}
+
+
+
+
+#'A framework for analyzing the impact of discretization noise on the performance and impact of classifiers
+#'
+#'The impact on the performance of the chosen classifier is given in terms of Accuracy, Precision, Recall, Brier Score, AUC, F-Measure and Mathew's Correlation Coefficient (MCC)
+#'Whereas the impact on the feature importance is given in terms of Likelihood of rank shifts
+#'
+#' @param data must be a object of type data.frame, with the continuous dependent variable
+#' @param dep_var a string giving the column name of continuous dependent variable supplied in the data parameter. This is the variable which creates the discretization noise.
+#' @param classifier a string, takes the name of the classifier.Currently supported classifiers are 
+#' 'rf' - Random forest
+#' 'lrm' - Logistic regression
+#' 'CART' - Classification tree
+#' 'knn' - K-Nearest Neighbors 
+#' @param limit a numeric value specifying the limit value to demarcate user/domain expert defined noisy area in the data. Typically limit determines the amount of data around the cutpoint being defined as the noisy area.
+#' @param step_size a numeric value determining in what steps must the noisy area impact must be analyzed. For faster runs, choose a larger step size, whereas for more accurate impact estimation use a smaller step-size.
+#' @param parallel a logical value indicating if the function must be executed in parallel --Recommended.
+#' @param n_cores a numeric value specifying the number of cores to be used for parallel execution. Defaults to 1.
+#' @param boot_size a numeric value. It specifies the number of bootstrap iterations to be used in the framework. Defaults to 100
+#' @param cutpoint a numeric value specifying the cutpoint to be used for discretizing the continuous dependent variable. This is the cutpoint around which discretization noise is to be analyzed. If not specified, median of the dependent variable is used as the cutpoint
+#' @param save_interim_results a logical value specifying if the intermediate performance and interpretation results are to be saved. Defaults to FALSE
+#' @param dest_path a string value specifying the desitination path in which the intermediate resutls are to be saved
+#' 
 
 analyzeDiscretizationNoise<-function(data,dep_var,classifier,limit,step_size,
                                      parallel=FALSE,
@@ -322,7 +456,7 @@ for(percentage in sequence)
 
 if(save_interim_results==TRUE){
   saveRDS(performance_results,paste(dest_path,'/','performance.rds',sep=''))
-  saveRDS(importance_results,paste(dest_path,'/','performance.rds',sep=''))
+  saveRDS(importance_results,paste(dest_path,'/','importance.rds',sep=''))
 }
 
 h<-head(sequence,1)
@@ -334,6 +468,7 @@ for(k in 1:7){
 print(paste(round(100-(median(stub1[,k])/median(stub2[,k]))*100,2),ifelse(wilcox.test(stub1[,k],stub2[,k],paired = FALSE)$p.value <0.05,'(S)','(NS)'),
       as.character(cohen.d(stub1[,k],stub2[,k])$magnitude),sep=' '))
 }
+importance_impact_estimation(importance_results)
 
 }
 
