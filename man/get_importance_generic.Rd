@@ -11,6 +11,9 @@ get_importance_generic(model, var)
 
 \item{var}{a character vector, containing the columnames of the test data set}
 }
+\value{
+a numeric vector, with all the importance values for the features involved
+}
 \description{
 Function for generating the importance values of the classifiers
 }

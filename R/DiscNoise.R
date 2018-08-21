@@ -16,6 +16,7 @@ library(mccr)
 #'@param model a r model. A trained classifier model whose importance is to be evaluated
 #'@param var a character vector, containing the columnames of the test data set
 #'@return a numeric vector, with all the importance values for the features involved
+#'@export
 
 get_importance_generic<-function(model,var){
   if(classifier=='rf'){
@@ -37,7 +38,7 @@ get_importance_generic<-function(model,var){
 #' @param boot_size a numeric value. It specifies the number of bootstrap iterations to be used in the framework.
 #' @param seed a logical value indicating if the experiment needs to repetable or random. Defaults to TRUE
 #' @return a list containing train and test data for all specified boot_Size iterations
-#' 
+#' @export
 
 create_oosb_sample<-function(data,boot_size,seed=TRUE){
   
@@ -71,7 +72,7 @@ if(is.numeric(seed)){
 #' @param actuals A vector containing the true class of the test data points
 #' @param predicted A vector of predicted values 
 #' @return a numeric copmuted MCC value
-#' 
+#' @export
 
 get_auc<-function(actuals,predicted){
   predictions<-prediction(predicted,actuals)
@@ -87,6 +88,7 @@ get_auc<-function(actuals,predicted){
 #' @param pred A vector of predicted values 
 #' @param classes The classes that are existent in the dependent variable 
 #' @return a numeric copmuted MCC value
+#' @export
 
 #Function to get Mathew's Correlation Coefficient 
 get_mcc<-function(act,pred,classes)
@@ -110,6 +112,7 @@ get_mcc<-function(act,pred,classes)
 #'@param test a dataframe. Test dataset 
 #'@param model a r model. A trained classifier model whose performance is to be evaluated
 #'@return a vector with al the performance measures computed 
+#'@export
 
 #This function computes all the performance metrics at once 
 get_performance_metrics<-function(actuals,test,model)
@@ -150,6 +153,7 @@ get_performance_metrics<-function(actuals,test,model)
 #' 'knn' - K-Nearest Neighbors 
 #' @param train a dataframe. Contains the train dataset
 #' @param ... optional additional arguements for the classifer
+#' @export
 
 build_model<-function(classifier,train,...){
   
@@ -193,7 +197,7 @@ build_model<-function(classifier,train,...){
 #' @param test the test dataset for which prob score or responses are to be genereated 
 #' @param type a string, that takes either c('class','prob','response') for apporiate response
 #' @return probability score for the outcome classes or actual class that the supplied model predicts
-
+#' @export
 predict_generic<-function(model,test,type)
 {
   if(type=='response')
@@ -232,7 +236,7 @@ remove_noise<-function(train,dep_var,cutpoint,target){
 #' @param dep_var a string giving the column name of continuous dependent variable supplied in the data parameter. This is the variable which creates the discretization noise.
 #' @param target a numeric value indicating the amount of discretization noise is to be included relative to cutpoint' 
 #' @return a list, that contains two lists containing performance impacts and importance values for each bootstrap iteration for the classifier
-#' 
+#' @export
 RWKH_framework<-function(classifier,data,parallel,n_cores,boot_size,dep_var,cutpoint,target,...)
 {
   indices<-create_oosb_sample(data,boot_size)
@@ -301,7 +305,7 @@ RWKH_framework<-function(classifier,data,parallel,n_cores,boot_size,dep_var,cutp
 #'
 #'@param importance_results a list of lists, which is result from the framework
 #'@return matrix containing the interpretation impact
-#'
+#'@export
 
 
 importance_impact_estimation<-function(importance_results){
@@ -378,7 +382,7 @@ return(Importance_impact)
 #' @param save_interim_results a logical value specifying if the intermediate performance and interpretation results are to be saved. Defaults to FALSE
 #' @param dest_path a string value specifying the desitination path in which the intermediate resutls are to be saved
 #' @return Returns a list constaining the performance and interpretation impact. Individual elemets of list are matrices
-#' 
+#' @export
 
 analyzeDiscretizationNoise<-function(data,dep_var,classifier,limit,step_size,
                                      parallel=FALSE,

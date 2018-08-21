@@ -35,6 +35,9 @@ analyzeDiscretizationNoise(data, dep_var, classifier, limit, step_size,
 
 \item{dest_path}{a string value specifying the desitination path in which the intermediate resutls are to be saved}
 }
+\value{
+Returns a list constaining the performance and interpretation impact. Individual elemets of list are matrices
+}
 \description{
 The impact on the performance of the chosen classifier is given in terms of Accuracy, Precision, Recall, Brier Score, AUC, F-Measure and Mathew's Correlation Coefficient (MCC)
 Whereas the impact on the feature importance is given in terms of Likelihood of rank shifts
