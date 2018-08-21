@@ -8,14 +8,14 @@ library(rms)
 library(caret)
 library(mccr)
 library(foreign)
-library(roxygen2)
+
 
 
 #Extract importance from the models
 #' Function for generating the importance values of the classifiers 
 #'@param model a r model. A trained classifier model whose importance is to be evaluated
 #'@param var a character vector, containing the columnames of the test data set
-#'@returns a numeric vector, with all the importance values for the features involved
+#'@return a numeric vector, with all the importance values for the features involved
 
 get_importance_generic<-function(model,var){
   if(classifier=='rf'){
@@ -300,6 +300,7 @@ RWKH_framework<-function(classifier,data,parallel,n_cores,boot_size,dep_var,cutp
 #'Furthermore, They also report the liklihood of rank shifts that occur on the top three ranks. Shifts are the possibility of the importance rank for the given rank shifting due to discretization noise
 #'
 #'@param importance_results a list of lists, which is result from the framework
+#'@return matrix containing the interpretation impact
 #'
 
 
@@ -341,8 +342,16 @@ liklihood_shifts<-NULL
     
   }
   names(liklihood_shifts)<-c('rank1','rank2','rank3')
+  Importance_impact<-matrix(nrow=1,ncol=5)
 
-print(paste('significance:',wilcox_result,'Effect size:',co$magnitude,co$estimate,'Rank 1 Shift:',liklihood_shifts[1],'Rank 2 Shift:',liklihood_shifts[2],'Rank 3 Shift:',liklihood_shifts[3]))
+
+Importance_impact[1,1]<-wilcox_result
+Importance_impact[1,2]<-paste(co$magnitude,co$estimate,sep=' ')
+Importance_impact[1,3]<-liklihood_shifts[1]
+Importance_impact[1,4]<-liklihood_shifts[2]
+Importance_impact[1,5]<-liklihood_shifts[3]
+
+return(Importance_impact)
 }
 
 
@@ -368,6 +377,7 @@ print(paste('significance:',wilcox_result,'Effect size:',co$magnitude,co$estimat
 #' @param cutpoint a numeric value specifying the cutpoint to be used for discretizing the continuous dependent variable. This is the cutpoint around which discretization noise is to be analyzed. If not specified, median of the dependent variable is used as the cutpoint
 #' @param save_interim_results a logical value specifying if the intermediate performance and interpretation results are to be saved. Defaults to FALSE
 #' @param dest_path a string value specifying the desitination path in which the intermediate resutls are to be saved
+#' @return Returns a list constaining the performance and interpretation impact. Individual elemets of list are matrices
 #' 
 
 analyzeDiscretizationNoise<-function(data,dep_var,classifier,limit,step_size,
@@ -464,11 +474,18 @@ t<-tail(sequence,1)
 stub1<-performance_results[[as.character(h)]]
 stub2<-performance_results[[as.character(t)]]
 
+titles<-c('accuracy','precision','recall','brier_score','auc','f_measure','mcc')
+Performance_impact<-matrix(nrow=7,ncol=4)
 for(k in 1:7){
-print(paste(round(100-(median(stub1[,k])/median(stub2[,k]))*100,2),ifelse(wilcox.test(stub1[,k],stub2[,k],paired = FALSE)$p.value <0.05,'(S)','(NS)'),
-      as.character(cohen.d(stub1[,k],stub2[,k])$magnitude),sep=' '))
+
+  Performance_impact[k,1]<-titles[k]
+  Performance_impact[k,2]<-round(100-(median(stub1[,k])/median(stub2[,k]))*100,2)
+  Performance_impact[k,3]<-ifelse(wilcox.test(stub1[,k],stub2[,k],paired = FALSE)$p.value <0.05,'Significant','Not-Significant')
+  Performance_impact[k,4]<-paste(as.character(cohen.d(stub1[,k],stub2[,k])$estimate),as.character(cohen.d(stub1[,k],stub2[,k])$magnitude),sep=' ')
 }
-importance_impact_estimation(importance_results)
+Importance_impact<-importance_impact_estimation(importance_results)
+
+return(list(Performance_impact,Importance_impact))
 
 }
 
