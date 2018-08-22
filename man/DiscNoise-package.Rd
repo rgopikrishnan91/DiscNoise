@@ -16,5 +16,5 @@ For all the functions in the package see \code{help(package = "distcompare")}
 Maintainer: Gopi Krishnan Rajbahadur \url{http://gopikrishnanrajbahadur.me}
 }
 \references{
-Currently paper that proposes this is titiled "Impact of Discretization Noise on Machine Learning Classifiers when Studying Software Engineering Datasets" and is under review for TSE (Transaction of Software Engineering)
-}
+Rajbahadur, G. K., Wang, S., Kamei, Y., & Hassan, A. E. (2018). Impact of Discretization Noise on Machine Learning Classifiers when Studying Software Engineering Datasets. TBA.
+ }
