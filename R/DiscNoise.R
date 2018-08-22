@@ -384,7 +384,7 @@ return(Importance_impact)
 #' @return Returns a list constaining the performance and interpretation impact. Individual elemets of list are matrices
 #' @export
 
-analyzeDiscretizationNoise<-function(data,dep_var,classifier,limit,step_size,
+compute_impact<-function(data,dep_var,classifier,limit,step_size,
                                      parallel=FALSE,
                                      n_cores=1,boot_size=100,
                                      cutpoint=NULL,save_interim_results=FALSE,dest_path=NULL){
